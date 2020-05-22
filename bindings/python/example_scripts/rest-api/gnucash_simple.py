@@ -143,6 +143,8 @@ def splitToDict(split, entities):
         simple_split['amount'] = split.GetAmount().to_double()
         simple_split['value'] = split.GetValue().to_double()
         simple_split['balance'] = split.GetBalance().to_double()
+        simple_split['reconcile'] = split.GetReconcile()
+        simple_split['date_reconciled'] = split.GetDateReconciled().strftime('%Y-%m-%d')
         simple_split['cleared_balance'] = split.GetClearedBalance().to_double()
         simple_split['reconciled_balance'] = split.GetReconciledBalance(
             ).to_double()

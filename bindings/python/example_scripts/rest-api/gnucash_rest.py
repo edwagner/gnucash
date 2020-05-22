@@ -210,6 +210,28 @@ def api_transaction(guid):
     else:
         abort(405)
 
+@app.route('/splits/<guid>', methods=['GET'])
+def api_get_split(guid):
+
+    # check split exists
+    split = getSplit(session.book, guid)
+
+    if split is None:
+        abort(404)
+
+    return Response(json.dumps(split), mimetype='application/json')
+
+@app.route('/splits/<guid>/clear', methods=['POST'])
+def api_clear_split(guid):
+
+    try:
+        split = clearSplit(session.book, guid)
+    except Error as error:
+        return Response(json.dumps({'errors': [{'type' : error.type,
+            'message': error.message, 'data': error.data}]}), status=400, mimetype='application/json')
+    else:
+        return Response(json.dumps(split), status=200, mimetype='application/json')
+
 @app.route('/bills', methods=['GET', 'POST'])
 def api_bills():
 
@@ -1725,7 +1747,8 @@ def addTransaction(book, num, description, date_posted, currency_mnumonic, split
     transaction.SetDescription(description)
     transaction.SetNum(num)
 
-    transaction.SetDatePostedTS(date_posted)
+    # transaction.SetDatePostedTS(date_posted)
+    transaction.SetDatePostedSecsNormalized(date_posted)
 
     transaction.CommitEdit()
 
@@ -1810,6 +1833,37 @@ def editTransaction(book, transaction_guid, num, description, date_posted,
     transaction.CommitEdit()
 
     return gnucash_simple.transactionToDict(transaction, ['splits'])
+
+def getSplit(book, split_guid):
+
+    guid = gnucash.gnucash_core.GUID() 
+    gnucash.gnucash_core.GUIDString(split_guid, guid)
+
+    split = guid.SplitLookup(book)
+
+    if split is None:
+        return None
+    else:
+        return gnucash_simple.splitToDict(split, [])
+
+def clearSplit(book, split_guid):
+
+    guid = gnucash.gnucash_core.GUID() 
+    gnucash.gnucash_core.GUIDString(split_guid, guid)
+
+    split = guid.SplitLookup(book)
+
+    if split is None:
+        raise Error('NoSplit',
+            'A split with this GUID does not exist',
+            {'field': 'guid'})
+
+    transaction = split.GetParent()
+    transaction.BeginEdit()
+    split.SetReconcile('c')
+    transaction.CommitEdit()
+
+    return gnucash_simple.splitToDict(split, [])
 
 def gnc_numeric_from_decimal(decimal_value):
     sign, digits, exponent = decimal_value.as_tuple()
