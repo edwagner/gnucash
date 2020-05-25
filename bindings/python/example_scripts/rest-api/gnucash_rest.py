@@ -130,6 +130,7 @@ def api_transactions():
         
         currency = str(request.form.get('currency', ''))
         description = str(request.form.get('description', ''))
+        notes = str(request.form.get('notes', ''))
         num = str(request.form.get('num', ''))
         date_posted = str(request.form.get('date_posted', ''))
 
@@ -144,7 +145,7 @@ def api_transactions():
 
         try:
             transaction = addTransaction(session.book, num, description,
-                date_posted, currency, splits)
+                notes, date_posted, currency, splits)
         except Error as error:
             return Response(json.dumps({'errors': [{'type' : error.type,
                 'message': error.message, 'data': error.data}]}), status=400,
@@ -1705,7 +1706,7 @@ def addAccount(book, name, currency_mnumonic, account_guid):
     account.SetType(ACCT_TYPE_ASSET)
     account.SetCommodity(currency)
 
-def addTransaction(book, num, description, date_posted, currency_mnumonic, splits):
+def addTransaction(book, num, description, notes, date_posted, currency_mnumonic, splits):
 
     transaction = Transaction(book)
 
@@ -1746,8 +1747,8 @@ def addTransaction(book, num, description, date_posted, currency_mnumonic, split
     transaction.SetCurrency(currency)
     transaction.SetDescription(description)
     transaction.SetNum(num)
+    transaction.SetNotes(notes)
 
-    # transaction.SetDatePostedTS(date_posted)
     transaction.SetDatePostedSecsNormalized(date_posted)
 
     transaction.CommitEdit()
